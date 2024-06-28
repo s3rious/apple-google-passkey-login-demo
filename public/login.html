@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>Login</title>
+    </head>
+    <body>
+        <h2>Register</h2>
+        <form action="/auth/register" id="register-form" method="post">
+            <input name="email" placeholder="Email" required type="email" />
+            <input
+                name="password"
+                placeholder="Password"
+                required
+                type="password"
+            />
+            <button type="submit">Register</button>
+        </form>
+        <h1>Login</h1>
+        <a href="/auth/apple">
+            <button>Sign in with Apple</button>
+        </a>
+        <a href="/auth/google">
+            <button>Sign in with Google</button>
+        </a>
+        <form id="passkey-login-form">
+            <input name="email" placeholder="Email" required type="email" />
+            <button onclick="loginWithPasskey(this)" type="button">
+                Login with Passkey
+            </button>
+        </form>
+        <h2>Login with Email and Password</h2>
+        <form action="/auth/login" id="email-login-form" method="post">
+            <input name="email" placeholder="Email" required type="email" />
+            <input
+                name="password"
+                placeholder="Password"
+                required
+                type="password"
+            />
+            <button type="submit">Login</button>
+        </form>
+        <script src="https://cdn.jsdelivr.net/npm/@github/webauthn-json@2.1.1/dist/browser-global/webauthn-json.browser-global.min.js"></script>
+        <script>
+            async function loginWithPasskey(button) {
+                const input = button.previousElementSibling;
+                const email = input.value;
+
+                const challengeResponse = await fetch("/auth/passkey/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email }),
+                });
+
+                const options = await challengeResponse.json();
+
+                console.log(options);
+
+                const credential = await webauthnJSON.get({
+                    publicKey: options,
+                });
+
+                const loginResponse = await fetch(
+                    "/auth/passkey/login/callback",
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(credential),
+                    },
+                );
+
+                if (loginResponse.status === 200) {
+                    window.location.href = "/dashboard";
+                } else {
+                    alert("Login failed");
+                }
+            }
+        </script>
+    </body>
+</html>

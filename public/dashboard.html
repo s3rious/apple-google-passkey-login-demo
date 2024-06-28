@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>Dashboard</title>
+    </head>
+    <body>
+        <h1>Dashboard</h1>
+        <p id="user-info"></p>
+        <form action="/logout" id="logout-form" method="post">
+            <button type="submit">Logout</button>
+        </form>
+        <h2>Link Additional Accounts</h2>
+        <a href="/auth/apple/link" id="apple-account">
+            <button>Link Apple Account</button>
+        </a>
+        <a href="/auth/google/link" id="google-account">
+            <button>Link Google Account</button>
+        </a>
+        <h2>Setup Passkey</h2>
+        <form id="passkey-form">
+            <button onclick="registerPasskey()" type="button">
+                Setup Passkey
+            </button>
+        </form>
+
+        <script src="https://cdn.jsdelivr.net/npm/@github/webauthn-json@2.1.1/dist/browser-global/webauthn-json.browser-global.min.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                fetch("/user-info", {
+                    method: "GET",
+                    credentials: "include",
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        document.getElementById("user-info").innerText =
+                            `Logged in as: ${data.email}`;
+
+                        if (data.apple) {
+                            const appleLink =
+                                document.getElementById("apple-account");
+                            const appleButton = appleLink.children[0];
+
+                            appleLink.href = "";
+                            appleButton.disabled = true;
+                            appleButton.innerText = `Apple account linked: ${data.apple.email}`;
+                        }
+
+                        if (data.google) {
+                            const googleLink =
+                                document.getElementById("google-account");
+                            const googleButton = googleLink.children[0];
+
+                            googleLink.href = "";
+                            googleButton.disabled = true;
+                            googleButton.innerText = `Google account linked: ${data.google.email}`;
+                        }
+
+                        if (data.passkey) {
+                            const passkeyForm =
+                                document.getElementById("passkey-form");
+                            const passkeyButton = passkeyForm.children[0];
+
+                            passkeyButton.disabled = true;
+                            passkeyButton.innerText = `Passkey enabled: ${data.passkey.id}`;
+                        }
+                    })
+                    .catch((error) => console.error("Error:", error));
+            });
+
+            async function registerPasskey() {
+                const challengeResponse = await fetch("/auth/passkey/link", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: "example-username" }), // Adjust as needed
+                });
+
+                const options = await challengeResponse.json();
+
+                const credential = await webauthnJSON.create({
+                    publicKey: options,
+                });
+
+                const registerResponse = await fetch(
+                    "/auth/passkey/link/callback",
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(credential),
+                    },
+                );
+
+                if (registerResponse.status === 200) {
+                    alert("Passkey setup successful");
+                } else {
+                    alert("Passkey setup failed");
+                }
+            }
+        </script>
+    </body>
+</html>
