@@ -73,7 +73,6 @@
                 const challengeResponse = await fetch("/auth/passkey/link", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username: "example-username" }), // Adjust as needed
                 });
 
                 const options = await challengeResponse.json();
@@ -93,6 +92,8 @@
 
                 if (registerResponse.status === 200) {
                     alert("Passkey setup successful");
+
+                    window.location.reload();
                 } else {
                     alert("Passkey setup failed");
                 }
